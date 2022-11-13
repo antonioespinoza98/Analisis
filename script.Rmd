@@ -108,6 +108,9 @@ Al tener un p tan peque. Se concluye que los sujetos no tienen la misma pendient
 mod5=lmer(glucosa~1+tiempo1+(1|sujeto)+(0+tiempo1|sujeto),base)
 summary(mod5)$coef
 ```
+
+# Modelo
+
 $$\hat{y} = 84.09 +$$
 
 
