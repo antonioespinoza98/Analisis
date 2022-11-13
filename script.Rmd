@@ -5,3 +5,112 @@ editor_options:
 ---
 
 # Aquí realizamos el análisis
+
+
+#*Base de datos*
+```{r}
+base <- read.csv("basededatos.csv")
+```
+
+```{r}
+str(base)
+base$sustancia = as.factor(base$sustancia)
+base$sujeto = as.factor(base$sujeto)
+base$tiempo = as.factor(base$tiempo)
+base$tiempo1 = as.numeric(base$tiempo)
+#base$glucosa = as.numeric(base$glucosa)
+```
+#*Graficos*
+```{r}
+library(lme4)
+library(lattice)
+```
+
+```{r}
+xyplot(glucosa~tiempo,group=sujeto,ylab="Glucosa en sangre",type="r",data = base)
+```
+
+```{r}
+xyplot(glucosa~tiempo1|sustancia,group=sujeto,pch=18, xlab="Tiempo en minutos", ylab="Nivel de glucosa",type=c("r"),base)
+```
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+xyplot(base$glucosa~base$tiempo1,group=base$sustancia,col=c(2,4), xlab="Tiempo en minutos", ylab="Nivel de glucosa",type="r", key=list(corner=c(0,1),lines=list(col=c(4,2,1,3,5),lty=1), text=list(c("control","fibra","proteina","chocolate","cereal"))))
+```
+
+```{r}
+beta0=beta1=c()
+ind=as.numeric(names(table(base$sujeto))) #esto es para hacerlos consecutivos
+for(i in 1:44) {
+  mod=lm(glucosa~tiempo+sustancia,base[base$sujeto==ind[1],])
+  beta0[i]=mod$coef[1]
+  beta1[i]=mod$coef[2]
+}
+```
+
+
+
+```{r}
+mod=lm(glucosa~tiempo+sustancia,base)
+mod$coefficients
+```
+
+*Probar interaccion en un modelo donde hay correlacion entre el intercepto y la pendiente*
+```{r}
+moda=lmer(glucosa~1+tiempo1*sustancia+(1+tiempo1|sujeto),REML=F,data=base) #No es necesario agregar REML
+modb=lmer(glucosa~1+tiempo1+sustancia+(1+tiempo1|sujeto),REML=F,data=base) #No es necesario agregar REML
+anova(moda,modb, test = "LRT")
+```
+Aqui encontramos que si hay interaccion. 
+
+*Probar interaccion en un modelo donde NO hay correlacion entre el intercepto y la pendiente*
+```{r}
+modc=lmer(glucosa~1+tiempo1*sustancia+(1|sujeto)+(0+tiempo1|sujeto),REML=F,base)
+modd=lmer(glucosa~1+tiempo1+sustancia+(1|sujeto)+(0+tiempo1|sujeto),REML=F,base)
+anova(modc,modd,test = "LRT")
+```
+En este modelo tambien hay interaccion. 
+
+H0: las diferencias en el nivel de glucosa son iguales entre cada sustancia para cada tiempo = no hay interaccion. 
+H0: las diferencias en el nivel de glucosa son diferentres entre cada sustancia para cada tiempo. 
+
+```{r}
+mod2=lmer(glucosa~1+tiempo1+(1+tiempo1|sujeto),REML=F,data=base) #No es necesario agregar REML
+mod3=lmer(glucosa~1+tiempo1+(1|sujeto)+(0+tiempo1|sujeto),REML=F,base)
+anova(mod3,mod2,test = "LRT")
+```
+Al comparar las deviancias de estos dos modelos se obtiene una diferencia de 2.0228, con un grado de libertad, lo cual arroja una probabilidad asociada de 0.155. No se rechaza la hipótesis nula que establece que no hay correlación entre pendientes e interceptos. Por lo tanto, se asume que las pendientes y los interceptos son independientes y se usa el segundo modelo (mod3).
+
+
+Hasta el momento tenemos que: contamos con un modelo sin correlacion entre la pendiente y el intercepto. Asimismo, el modelo si tiene interaccion entre el tiempo y la sustancia. (es el modelo modc)
+
+
+
+
+
+
+
+
+
+
+*Prueba de igualdad de pendientes*
+```{r}
+mod4=lmer(glucosa~1+tiempo1*sustancia+(1|sujeto),REML=F,base)
+anova(mod3,mod4)
+```
+Al tener un p tan peque. Se concluye que los sujetos no tienen la misma pendiente y se prefiere el mod3. Es decir, la velocidad en que cambia el nivel de glucosa de reaccion conforme pasa el tiempo en  minutos, varia de sujeto a sujeto, en unos aumenta y en otros decrece.
+
+```{r}
+mod5=lmer(glucosa~1+tiempo1+(1|sujeto)+(0+tiempo1|sujeto),base)
+summary(mod5)$coef
+```
+$$\hat{y} = 84.09 +$$
+
+
+
+
+
